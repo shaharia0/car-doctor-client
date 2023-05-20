@@ -16,11 +16,11 @@ const CheckOut = () => {
      const booking = {
       customerName: name,
       service_img: img,
-      customerEmail : email,
       service_date: date,
       service_id : _id,
       price: price,
-      service_title : title
+      service_title : title,
+      customerEmail: email
      }
      console.log(booking);
 
