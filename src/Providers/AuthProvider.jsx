@@ -1,9 +1,11 @@
 import { createContext, useEffect, useState } from "react";
 import {
+  GoogleAuthProvider,
   createUserWithEmailAndPassword,
   getAuth,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
 } from "firebase/auth";
 import app from "../firebase/firebase.config";
@@ -14,6 +16,7 @@ const auth = getAuth(app);
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const googleProvider = new GoogleAuthProvider();
 
   // create user
   const createUser = (email, password) => {
@@ -24,7 +27,11 @@ const AuthProvider = ({ children }) => {
     setLoading(true);
     return signInWithEmailAndPassword(auth, email, password);
   };
-
+   
+  const googleSignIn = () => {
+    setLoading(true);
+    return signInWithPopup(auth, googleProvider);
+  }
   const logOut = () => {
     setLoading(true);
     return signOut(auth);
@@ -32,9 +39,32 @@ const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setLoading(false);
       setUser(currentUser);
       console.log("current user", currentUser);
+      setLoading(false);
+      if(currentUser && currentUser.email){
+        const loggedUser = {
+          email: currentUser.email
+        }
+        fetch('https://car-doctor-server-three-gilt.vercel.app/jwt', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify(loggedUser)
+        })
+        .then(res => res.json())
+        .then(data => {
+          console.log('jst response', data);
+          // warning: local storage use is not the best idea it is second best idea to store access token 
+          localStorage.setItem('car-access-token', data.token);
+          // navigate(from, {replace: true})
+        })
+      }
+      else{
+        localStorage.removeItem('car-access-token');
+      }
+
     });
     return () => {
       return unsubscribe();
@@ -45,6 +75,7 @@ const AuthProvider = ({ children }) => {
     loading,
     createUser,
     signIn,
+    googleSignIn,
     logOut,
   };
 
